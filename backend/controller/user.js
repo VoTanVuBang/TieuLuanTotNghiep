@@ -9,7 +9,7 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const sendMail = require("../utils/sendMail");
 const sendToken = require("../utils/jwtToken");
-const { isAuthenticated } = require("../middleware/auth");
+const { isAuthenticated, isAdmin } = require("../middleware/auth");
 
 router.post("/create-user", upload.single("file"), async (req, res, next) => {
   try {
@@ -339,5 +339,60 @@ router.put("/update-user-password",isAuthenticated,catchAsyncErrors(async(req,re
  } catch (error) {
   return next(new ErrorHandler(error.message, 500));
  }
+}))
+
+// Lấy thông tin user với userId
+router.get("/user-info/:id",catchAsyncErrors(async(req,res,next)=>{
+  try {
+    const user = await User.findById(req.params.id);
+    res.status(201).json({
+      success: true,
+      user,
+    })
+  } catch (error) {
+  return next(new ErrorHandler(error.message, 500));
+    
+  }
+}));
+
+// Tất cả user ---- admin
+router.get(
+  "/admin-all-users",
+  isAuthenticated,
+  isAdmin("Admin"),
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const users = await User.find().sort({
+        createdAt: -1,
+      });
+      res.status(201).json({
+        success: true,
+        users,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
+//Xóa người dùng ---admin
+router.delete("/delete-user/:id",isAuthenticated,isAdmin("Admin"), catchAsyncErrors(async(req,res,next)=>{
+  try {
+    const user = await User.findById(req.params.id);
+    if(!user){
+      return next(
+        new ErrorHandler("Không tìm thấy người dùng...!", 400)
+      );
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+    res.status(201).json({
+      success: true,
+      message: "Xóa người dùng thành công!",
+    })
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 500));
+    
+  }
 }))
 module.exports = router;

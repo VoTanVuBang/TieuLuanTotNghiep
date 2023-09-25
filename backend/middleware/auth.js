@@ -34,3 +34,12 @@ exports.isSeller= catchAsyncErrors(async (req, res, next) => {
 
   next();
 });
+
+exports.isAdmin = (...roles)=>{
+  return(req,res,next)=>{
+    if(!roles.includes(req.user.role)){
+        return next(new ErrorHandler(`${req.user.role} không thể truy cập tài nguyên này!`))
+    }
+    next();
+  }
+}
