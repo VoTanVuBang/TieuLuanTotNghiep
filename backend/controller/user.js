@@ -2,18 +2,27 @@ const express = require("express");
 const path = require("path");
 const User = require("../model/user");
 const router = express.Router();
-const { upload } = require("../multer");
+const {
+  upload
+} = require("../multer");
 const ErrorHandler = require("../utils/ErrorHandler");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const sendMail = require("../utils/sendMail");
 const sendToken = require("../utils/jwtToken");
-const { isAuthenticated, isAdmin } = require("../middleware/auth");
+const {
+  isAuthenticated,
+  isAdmin
+} = require("../middleware/auth");
 
 router.post("/create-user", upload.single("file"), async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password
+    } = req.body;
     const userEmail = await User.findOne({
       email,
     });
@@ -30,7 +39,7 @@ router.post("/create-user", upload.single("file"), async (req, res, next) => {
           });
         }
       });
-      return next(new ErrorHandler("User already exists", 400));
+      return next(new ErrorHandler("Người dùng đã tồn tại", 400));
     }
 
     const filename = req.file.filename;
@@ -51,12 +60,12 @@ router.post("/create-user", upload.single("file"), async (req, res, next) => {
     try {
       await sendMail({
         email: user.email,
-        subject: "Activate your account",
-        message: `Hello ${user.name}, please click on the link to activate your account: ${activationUrl}`,
+        subject: "Kích hoạt tài khoản",
+        message: `Xin chào ${user.name}, Vui lòng nhấp  vào đường liên kết để kích hoạt tài khoản: ${activationUrl}`,
       });
       res.status(201).json({
         success: true,
-        message: `please check your email:- ${user.email} to activate your account`,
+        message: `Vui lòng kiểm tra email:- ${user.email} để kích hoạt tài khoản`,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -78,7 +87,9 @@ router.post(
   "/activation",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { activation_token } = req.body;
+      const {
+        activation_token
+      } = req.body;
       const newUser = jwt.verify(
         activation_token,
         process.env.ACTIVATION_SECRET
@@ -87,7 +98,12 @@ router.post(
       if (!newUser) {
         return next(new ErrorHandler("Invalid token", 400));
       }
-      const { name, email, password, avatar } = newUser;
+      const {
+        name,
+        email,
+        password,
+        avatar
+      } = newUser;
 
       let user = await User.findOne({
         email,
@@ -115,7 +131,10 @@ router.post(
   "/login-user",
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { email, password } = req.body;
+      const {
+        email,
+        password
+      } = req.body;
 
       if (!email || !password) {
         return next(new ErrorHandler("Vui lòng điền email và mật khẩu!", 400));
@@ -195,9 +214,16 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { email, password, phoneNumber, name } = req.body;
+      const {
+        email,
+        password,
+        phoneNumber,
+        name
+      } = req.body;
 
-      const user = await User.findOne({ email }).select("+password");
+      const user = await User.findOne({
+        email
+      }).select("+password");
       if (!user) {
         return next(new ErrorHandler("Người dùng không tồn tại!", 400));
       }
@@ -298,15 +324,21 @@ router.delete(
     try {
       const userId = req.user._id;
       const addressId = req.params.id;
-      await User.updateOne(
-        {
-          _id: userId,
-        },
-        { $pull: { addresses: { _id: addressId } } }
-      );
+      await User.updateOne({
+        _id: userId,
+      }, {
+        $pull: {
+          addresses: {
+            _id: addressId
+          }
+        }
+      });
       const user = await User.findById(userId);
 
-      res.status(200).json({ success: true, user });
+      res.status(200).json({
+        success: true,
+        user
+      });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
     }
@@ -314,8 +346,8 @@ router.delete(
 );
 
 // Update user password
-router.put("/update-user-password",isAuthenticated,catchAsyncErrors(async(req,res,next)=>{
- try {
+router.put("/update-user-password", isAuthenticated, catchAsyncErrors(async (req, res, next) => {
+  try {
     const user = await User.findById(req.user._id).select("+password");
     const isPasswordMatched = await user.comparePassword(req.body.oldPassword);
 
@@ -333,16 +365,16 @@ router.put("/update-user-password",isAuthenticated,catchAsyncErrors(async(req,re
     await user.save();
 
     res.status(200).json({
-      success:true,
-      message:"Cập nhật mật khẩu thành công",
+      success: true,
+      message: "Cập nhật mật khẩu thành công",
     })
- } catch (error) {
-  return next(new ErrorHandler(error.message, 500));
- }
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 500));
+  }
 }))
 
 // Lấy thông tin user với userId
-router.get("/user-info/:id",catchAsyncErrors(async(req,res,next)=>{
+router.get("/user-info/:id", catchAsyncErrors(async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
     res.status(201).json({
@@ -350,8 +382,8 @@ router.get("/user-info/:id",catchAsyncErrors(async(req,res,next)=>{
       user,
     })
   } catch (error) {
-  return next(new ErrorHandler(error.message, 500));
-    
+    return next(new ErrorHandler(error.message, 500));
+
   }
 }));
 
@@ -376,10 +408,10 @@ router.get(
 );
 
 //Xóa người dùng ---admin
-router.delete("/delete-user/:id",isAuthenticated,isAdmin("Admin"), catchAsyncErrors(async(req,res,next)=>{
+router.delete("/delete-user/:id", isAuthenticated, isAdmin("Admin"), catchAsyncErrors(async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
-    if(!user){
+    if (!user) {
       return next(
         new ErrorHandler("Không tìm thấy người dùng...!", 400)
       );
@@ -392,7 +424,7 @@ router.delete("/delete-user/:id",isAuthenticated,isAdmin("Admin"), catchAsyncErr
     })
   } catch (error) {
     return next(new ErrorHandler(error.message, 500));
-    
+
   }
 }))
 module.exports = router;
